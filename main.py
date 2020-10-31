@@ -1,17 +1,11 @@
+from pprint import pprint
 from gazzettaufficiale import scraper
-import json
+
+# API call mock-up - just for test purposes
 
 res = {"series": []}
 gu = scraper.GazzettaUfficiale()
-for i, s in enumerate(gu.get_latest_series()):
-    res["series"].append({"name": s.name, "number": s.number, "publication_date": s.published_date.isoformat(), "elements": []})
+for s in gu.get_latest_series():
+    pprint(s.__dict__)
     for e in s.get_elements():
-        res["series"][i]["elements"].append({
-            "title": e.title,
-            "publication_date": e.publication_date,
-            "section": e.section,
-            "law_entity": e.law_entity,
-            "short_description": e.short_description,
-        })
-
-print(json.dumps(res))
+        pprint(e.__dict__)

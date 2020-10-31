@@ -19,19 +19,24 @@ class _BaseObject:
 
     @staticmethod
     def _strip_str(input_str: str):
-        return input_str.lstrip().rstrip()
+        res = input_str.strip().replace("\n", " ").replace("\t", " ")
+        for _ in range(10):
+            res = res.replace("  ", " ")
+        return res
 
 
 class Series(_BaseObject):
-    def __init__(self, name, number, publication_date, url):
+    def __init__(self, name, number, publication_date):
         super().__init__()
         self.name = name
         self.number = number
-        self.published_date = dt.fromisoformat(publication_date).date()
-        self.url = url
+        self.publication_date = dt.fromisoformat(publication_date).date()
+        self.url = f"/gazzetta/{self.name}/caricaDettaglio/home" \
+                   f"?dataPubblicazioneGazzetta={self.publication_date.isoformat()}&" \
+                   f"numeroGazzetta={self.number}"
 
     def __repr__(self):
-        return f"GazzettaUfficiale {self.name} series #{self.number} published the {self.published_date}"
+        return f"<GazzettaUfficiale {self.name} series #{self.number} published the {self.publication_date}>"
 
     def get_elements(self):
         soup = self._request(self.url)
@@ -50,27 +55,23 @@ class Series(_BaseObject):
                 continue
 
             elements.append(Element(
-                element_type="shrug",
                 title=self._strip_str(span.find("span", {"class": "data"}).text),
-                publication_date="shrug",
                 short_description=self._strip_str(span.find_all("a")[-1].contents[0]),
-                parent_series=self,
-                section=section,
+                series=self,
+                series_section=section,
                 law_entity=law_entity,
             ))
         return elements
 
 
 class Element(_BaseObject):
-    def __init__(self, element_type, title, publication_date, short_description,
-                 parent_series: Series, section, law_entity):
+    def __init__(self, title, short_description,
+                 series: Series, series_section, law_entity):
         super().__init__()
-        self.element_type = element_type
         self.title = title
-        self.publication_date = publication_date
         self.short_description = short_description
-        self.parent_series = parent_series
-        self.section = section
+        self.parent_series = series
+        self.series_section = series_section
         self.law_entity = law_entity
 
 
@@ -99,6 +100,5 @@ class GazzettaUfficiale(_BaseObject):
                 name=parsed_item_url.path.split('/')[2],
                 number=parsed_qr["numeroGazzetta"][0],
                 publication_date=parsed_qr["dataPubblicazioneGazzetta"][0],
-                url=f"{parsed_item_url.path}?{parsed_item_url.query}",
             ))
         return result
